@@ -151,3 +151,67 @@ document.getElementById('hist-kind').addEventListener('change', updateFilterVisi
 document.getElementById('hist-run').addEventListener('click', runHistory);
 updateFilterVisibility();
 
+async function refreshConfig() {
+  const res = await fetch('/api/config/state');
+  if (!res.ok) return;
+  const cfg = await res.json();
+  const tcpList = document.getElementById('tcp-list');
+  tcpList.innerHTML = '';
+  for (const t of cfg.tcp) {
+    const el = document.createElement('div');
+    el.className = 'flex justify-between items-center bg-neutral-800 rounded px-2 py-1';
+    el.innerHTML = `<span>${t.host}:${t.port} (${t.interval_sec}s)</span><button data-id="${t.id}" class="tcp-del text-red-400">Delete</button>`;
+    tcpList.appendChild(el);
+  }
+  const dnsList = document.getElementById('dns-list');
+  dnsList.innerHTML = '';
+  for (const d of cfg.dns) {
+    const el = document.createElement('div');
+    el.className = 'flex justify-between items-center bg-neutral-800 rounded px-2 py-1';
+    el.innerHTML = `<span>${d.fqdn} (${d.interval_sec}s)</span><button data-id="${d.id}" class="dns-del text-red-400">Delete</button>`;
+    dnsList.appendChild(el);
+  }
+  const httpList = document.getElementById('http-list');
+  httpList.innerHTML = '';
+  // HTTP jobs displayed only if present; managed via config API once added server-side in future
+}
+
+async function addTcp() {
+  const host = document.getElementById('tcp-host').value.trim();
+  const port = parseInt(document.getElementById('tcp-port').value, 10) || 443;
+  const interval = parseFloat(document.getElementById('tcp-interval').value) || 5.0;
+  if (!host) return;
+  const id = `tcp-${host}-${port}-${Date.now()}`;
+  await fetch('/api/config/tcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, host, port, interval_sec: interval }) });
+  await refreshConfig();
+}
+
+async function addDns() {
+  const fqdn = document.getElementById('dns-fqdn').value.trim();
+  const resolvers = document.getElementById('dns-resolvers').value.trim().split(',').map(s => s.trim()).filter(Boolean);
+  const interval = parseFloat(document.getElementById('dns-interval').value) || 5.0;
+  if (!fqdn) return;
+  const id = `dns-${fqdn}-${Date.now()}`;
+  await fetch('/api/config/dns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, fqdn, resolvers, interval_sec: interval }) });
+  await refreshConfig();
+}
+
+document.getElementById('tcp-add').addEventListener('click', addTcp);
+document.getElementById('dns-add').addEventListener('click', addDns);
+document.getElementById('tcp-list').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.tcp-del');
+  if (!btn) return;
+  const id = btn.getAttribute('data-id');
+  await fetch(`/api/config/tcp/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await refreshConfig();
+});
+document.getElementById('dns-list').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.dns-del');
+  if (!btn) return;
+  const id = btn.getAttribute('data-id');
+  await fetch(`/api/config/dns/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await refreshConfig();
+});
+
+refreshConfig();
+

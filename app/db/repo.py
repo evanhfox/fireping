@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from app.db.tables import metadata, samples_tcp, samples_dns, targets_tcp, jobs_dns
+from app.db.tables import metadata, samples_tcp, samples_dns, samples_http, targets_tcp, jobs_dns, jobs_http
 
 
 def utc_now() -> datetime:
@@ -24,6 +24,11 @@ async def insert_tcp_sample(engine: AsyncEngine, record: Dict[str, Any]) -> None
 async def insert_dns_sample(engine: AsyncEngine, record: Dict[str, Any]) -> None:
     async with engine.begin() as conn:
         await conn.execute(insert(samples_dns).values(record))
+
+
+async def insert_http_sample(engine: AsyncEngine, record: Dict[str, Any]) -> None:
+    async with engine.begin() as conn:
+        await conn.execute(insert(samples_http).values(record))
 
 
 async def fetch_tcp_samples_between(

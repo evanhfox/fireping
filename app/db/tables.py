@@ -27,6 +27,16 @@ jobs_dns = Table(
 )
 
 
+jobs_http = Table(
+    "jobs_http",
+    metadata,
+    Column("id", String, primary_key=True),
+    Column("url", String, nullable=False),
+    Column("method", String, nullable=False, default="GET"),
+    Column("interval_sec", Float, nullable=False, default=5.0),
+)
+
+
 samples_tcp = Table(
     "samples_tcp",
     metadata,
@@ -54,5 +64,21 @@ samples_dns = Table(
     Column("rcode", String, nullable=True),
     Column("success", Boolean, nullable=False),
     Index("idx_dns_ts", "ts"),
+)
+
+
+samples_http = Table(
+    "samples_http",
+    metadata,
+    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("ts", DateTime, nullable=False),
+    Column("job_id", String, nullable=True),
+    Column("url", String, nullable=False),
+    Column("method", String, nullable=False),
+    Column("status_code", Integer, nullable=True),
+    Column("latency_ms", Float, nullable=False),
+    Column("success", Boolean, nullable=False),
+    Column("error", String, nullable=True),
+    Index("idx_http_ts", "ts"),
 )
 

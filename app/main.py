@@ -7,6 +7,7 @@ from app.routers.ping import router as ping_router
 from app.routers.stream import router as stream_router
 from app.routers.metrics import router as metrics_router
 from app.routers.config import router as config_router
+from app.routers.http_probe import router as http_router
 from app.utils.event_bus import create_event_bus
 from app.utils.ring_buffer import create_ring_buffer
 from fastapi.responses import JSONResponse
@@ -75,6 +76,7 @@ app.include_router(ping_router)
 app.include_router(stream_router)
 app.include_router(metrics_router)
 app.include_router(config_router)
+app.include_router(http_router)
 
 # Serve static frontend (fallback index.html)
 app.mount("/", StaticFiles(directory="app/static", html=True), name="static")

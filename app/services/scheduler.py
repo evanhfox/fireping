@@ -8,7 +8,8 @@ from fastapi import HTTPException
 
 from app.routers.ping import tcp_connect_latency, TcpPingResponse
 from app.routers.dns import resolve_dns, DnsQueryRequest, DnsQueryResponse
-from app.db.repo import insert_tcp_sample, insert_dns_sample
+from app.routers.http_probe import probe_http, HttpProbeResponse
+from app.db.repo import insert_tcp_sample, insert_dns_sample, insert_http_sample
 
 
 def _jitter_seconds(base: float, pct: float = 0.15) -> float:
@@ -28,6 +29,13 @@ def default_dns_jobs() -> List[Dict[str, Any]]:
     return [
         {"fqdn": "google.com", "record_type": "A", "resolvers": ["1.1.1.1", "8.8.8.8"], "interval_sec": 5.0},
         {"fqdn": "cloudflare.com", "record_type": "A", "resolvers": ["1.1.1.1", "8.8.8.8"], "interval_sec": 5.0},
+    ]
+
+
+def default_http_jobs() -> List[Dict[str, Any]]:
+    return [
+        {"url": "https://www.google.com", "method": "GET", "interval_sec": 10.0},
+        {"url": "https://www.cloudflare.com", "method": "GET", "interval_sec": 10.0},
     ]
 
 
@@ -97,6 +105,30 @@ async def _run_dns_loop(app, fqdn: str, record_type: str, resolvers: List[str], 
         await anyio.sleep(sleep_s)
 
 
+async def _run_http_loop(app, url: str, method: str, interval_sec: float) -> None:
+    while True:
+        started = time.perf_counter()
+        result: HttpProbeResponse = await probe_http(url, method, timeout_sec=min(5.0, interval_sec))
+        data = result.model_dump()
+        await _publish_and_buffer(app, "http_sample", data)
+        engine = app.state.runtime.get("db_engine")
+        if engine:
+            record = {
+                "ts": datetime.now(timezone.utc),
+                "job_id": None,
+                "url": data["url"],
+                "method": data["method"],
+                "status_code": data.get("status_code"),
+                "latency_ms": data["latency_ms"],
+                "success": data["success"],
+                "error": data.get("error"),
+            }
+            await insert_http_sample(engine, record)
+        elapsed = time.perf_counter() - started
+        sleep_s = max(0.05, _jitter_seconds(interval_sec) - elapsed)
+        await anyio.sleep(sleep_s)
+
+
 async def start_scheduler(app, task_group: anyio.abc.TaskGroup) -> None:
     # Watch in-memory config version and restart workers on change
     last_version: int | None = None
@@ -105,6 +137,7 @@ async def start_scheduler(app, task_group: anyio.abc.TaskGroup) -> None:
             "version": 1,
             "tcp": default_ping_targets(),
             "dns": default_dns_jobs(),
+            "http": default_http_jobs(),
         })
         if cfg["version"] != last_version:
             last_version = cfg["version"]
@@ -119,6 +152,14 @@ async def start_scheduler(app, task_group: anyio.abc.TaskGroup) -> None:
                         job["fqdn"],
                         job.get("record_type", "A"),
                         list(job.get("resolvers", [])),
+                        float(job["interval_sec"]),
+                    )
+                for job in cfg.get("http", []):
+                    child.start_soon(
+                        _run_http_loop,
+                        app,
+                        job["url"],
+                        job.get("method", "GET"),
                         float(job["interval_sec"]),
                     )
                 # Sleep until config changes
