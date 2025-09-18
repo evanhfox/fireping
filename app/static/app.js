@@ -152,7 +152,7 @@ document.getElementById('hist-run').addEventListener('click', runHistory);
 updateFilterVisibility();
 
 async function refreshConfig() {
-  const res = await fetch('/api/config/state');
+  const res = await apiFetch('/api/config/state');
   if (!res.ok) return;
   const cfg = await res.json();
   const tcpList = document.getElementById('tcp-list');
@@ -182,7 +182,7 @@ async function addTcp() {
   const interval = parseFloat(document.getElementById('tcp-interval').value) || 5.0;
   if (!host) return;
   const id = `tcp-${host}-${port}-${Date.now()}`;
-  await fetch('/api/config/tcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, host, port, interval_sec: interval }) });
+  await apiFetch('/api/config/tcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, host, port, interval_sec: interval }) });
   await refreshConfig();
 }
 
@@ -192,7 +192,7 @@ async function addDns() {
   const interval = parseFloat(document.getElementById('dns-interval').value) || 5.0;
   if (!fqdn) return;
   const id = `dns-${fqdn}-${Date.now()}`;
-  await fetch('/api/config/dns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, fqdn, resolvers, interval_sec: interval }) });
+  await apiFetch('/api/config/dns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, fqdn, resolvers, interval_sec: interval }) });
   await refreshConfig();
 }
 
@@ -202,16 +202,42 @@ document.getElementById('tcp-list').addEventListener('click', async (e) => {
   const btn = e.target.closest('.tcp-del');
   if (!btn) return;
   const id = btn.getAttribute('data-id');
-  await fetch(`/api/config/tcp/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await apiFetch(`/api/config/tcp/${encodeURIComponent(id)}`, { method: 'DELETE' });
   await refreshConfig();
 });
 document.getElementById('dns-list').addEventListener('click', async (e) => {
   const btn = e.target.closest('.dns-del');
   if (!btn) return;
   const id = btn.getAttribute('data-id');
-  await fetch(`/api/config/dns/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await apiFetch(`/api/config/dns/${encodeURIComponent(id)}`, { method: 'DELETE' });
   await refreshConfig();
 });
+
+async function addHttp() {
+  const url = document.getElementById('http-url').value.trim();
+  const method = document.getElementById('http-method').value;
+  const interval = parseFloat(document.getElementById('http-interval').value) || 10.0;
+  if (!url) return;
+  const id = `http-${Date.now()}`;
+  await apiFetch('/api/config/http', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, url, method, interval_sec: interval }) });
+  await refreshConfig();
+}
+
+document.getElementById('http-add').addEventListener('click', addHttp);
+
+function apiAuthHeader() {
+  const user = 'admin';
+  const pw = prompt('Password (for Basic auth):', 'changeme');
+  if (!pw) return {};
+  const token = btoa(`${user}:${pw}`);
+  return { 'Authorization': `Basic ${token}` };
+}
+
+async function apiFetch(url, options = {}) {
+  const headers = Object.assign({}, options.headers || {}, apiAuthHeader());
+  const res = await fetch(url, Object.assign({}, options, { headers }));
+  return res;
+}
 
 refreshConfig();
 
