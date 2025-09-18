@@ -49,7 +49,6 @@ jobs:
 
       - name: Trivy (human-readable table)
         uses: aquasecurity/trivy-action@0.24.0
-        continue-on-error: true
         with:
           scan-type: 'image'
           image-ref: 'fireping:ci'
@@ -58,26 +57,17 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL'
 
-      - name: Run Trivy container scan
+      - name: Run Trivy container scan (SARIF, non-blocking)
         uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: 'image'
           image-ref: 'fireping:ci'
           format: 'sarif'
           output: 'trivy-results.sarif'
-          # Only fail on CRITICAL vulns that have fixes available
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL'
           exit-code: '0'
-
-      - name: Fail if CRITICAL findings in SARIF
-        run: |
-          count=$(jq '[.runs[].results[]?] | length' trivy-results.sarif)
-          echo "CRITICAL findings: $count"
-          if [ "$count" -gt 0 ]; then
-            exit 1
-          fi
 
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
