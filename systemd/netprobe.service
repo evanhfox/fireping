@@ -1,0 +1,20 @@
+[Unit]
+Description=NetProbe FastAPI Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/netprobe
+Environment=PYTHONUNBUFFERED=1
+Environment=ADMIN_USER=admin
+# Set ADMIN_PASSWORD in an EnvironmentFile
+EnvironmentFile=-/etc/netprobe.env
+ExecStart=/usr/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080
+Restart=on-failure
+RestartSec=3
+User=netprobe
+Group=netprobe
+
+[Install]
+WantedBy=multi-user.target
