@@ -99,7 +99,7 @@ function handleEvent(evt) {
 async function bootstrap() {
   // Warm with recent samples
   try {
-    const res = await fetch('/api/metrics/recent?limit=200');
+    const res = await apiFetch('/api/metrics/recent?limit=200');
     if (res.ok) {
       const json = await res.json();
       for (const item of json.items) {
@@ -117,7 +117,7 @@ async function bootstrap() {
   // Summary every 30s
   setInterval(async () => {
     try {
-      const r = await fetch('/api/metrics/summary');
+      const r = await apiFetch('/api/metrics/summary');
       if (!r.ok) return;
       const s = await r.json();
       document.getElementById('sum-tcp').textContent = s.last_10m_samples.tcp;
@@ -146,7 +146,7 @@ async function runHistory() {
   if (kind === 'dns' && fqdn) params.set('fqdn', fqdn);
   const url = kind === 'tcp' ? `/api/metrics/tcp_rollup?${params}` : `/api/metrics/dns_rollup?${params}`;
   try {
-    const res = await fetch(url);
+    const res = await apiFetch(url);
     if (!res.ok) return;
     const json = await res.json();
     const labels = json.points.map(p => new Date(p.bucket).toLocaleTimeString());

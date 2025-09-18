@@ -14,9 +14,9 @@ class BasicAuthMiddleware(BaseHTTPMiddleware):
         self.password = os.environ.get(password_env)
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Allow health and static without auth
         path = request.url.path
-        if path.startswith("/healthz") or path.startswith("/static/") or path == "/" or path.startswith("/api/stream/"):
+        # Allow non-API requests and SSE without auth
+        if not path.startswith("/api") or path.startswith("/api/stream/") or path.startswith("/healthz"):
             return await call_next(request)
         # If no password configured, allow all (dev default)
         if not self.password:
