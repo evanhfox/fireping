@@ -70,17 +70,36 @@ async def _run_dns_loop(app, fqdn: str, record_type: str, resolvers: List[str], 
 
 
 async def start_scheduler(app, task_group: anyio.abc.TaskGroup) -> None:
-    for target in default_ping_targets():
-        task_group.start_soon(_run_ping_loop, app, target["host"], target["port"], float(target["interval_sec"]))
-    for job in default_dns_jobs():
-        task_group.start_soon(
-            _run_dns_loop,
-            app,
-            job["fqdn"],
-            job.get("record_type", "A"),
-            list(job.get("resolvers", [])),
-            float(job["interval_sec"]),
-        )
+    # Watch in-memory config version and restart workers on change
+    last_version: int | None = None
+    while True:
+        cfg = app.state.runtime.setdefault("config", {
+            "version": 1,
+            "tcp": default_ping_targets(),
+            "dns": default_dns_jobs(),
+        })
+        if cfg["version"] != last_version:
+            last_version = cfg["version"]
+            # Cancel previous child tasks by restarting our child group
+            async with anyio.create_task_group() as child:
+                for target in cfg.get("tcp", []):
+                    child.start_soon(_run_ping_loop, app, target["host"], target["port"], float(target["interval_sec"]))
+                for job in cfg.get("dns", []):
+                    child.start_soon(
+                        _run_dns_loop,
+                        app,
+                        job["fqdn"],
+                        job.get("record_type", "A"),
+                        list(job.get("resolvers", [])),
+                        float(job["interval_sec"]),
+                    )
+                # Sleep until config changes
+                while True:
+                    await anyio.sleep(1.0)
+                    current = app.state.runtime.get("config", cfg)
+                    if current.get("version") != last_version:
+                        child.cancel_scope.cancel()
+                        break
 
 import random
 import time
