@@ -103,7 +103,12 @@ async def dns_query(payload: DnsQueryRequest, request: Request) -> DnsQueryRespo
     result = await resolve_dns(payload)
     bus = request.app.state.runtime.get("event_bus")
     publish = bus["publish"]
+    ring = request.app.state.runtime.get("ring_buffer")
     await publish({
+        "type": "dns_sample",
+        "data": result.model_dump(),
+    })
+    await ring["append"]({
         "type": "dns_sample",
         "data": result.model_dump(),
     })

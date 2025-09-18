@@ -58,7 +58,12 @@ async def ping_tcp(payload: TcpPingRequest, request: Request) -> TcpPingResponse
     result = await tcp_connect_latency(payload.host, payload.port, payload.timeout_sec)
     bus = request.app.state.runtime.get("event_bus")
     publish = bus["publish"]
+    ring = request.app.state.runtime.get("ring_buffer")
     await publish({
+        "type": "tcp_sample",
+        "data": result.model_dump(),
+    })
+    await ring["append"]({
         "type": "tcp_sample",
         "data": result.model_dump(),
     })

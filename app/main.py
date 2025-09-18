@@ -5,7 +5,9 @@ from fastapi import FastAPI
 from app.routers.dns import router as dns_router
 from app.routers.ping import router as ping_router
 from app.routers.stream import router as stream_router
+from app.routers.metrics import router as metrics_router
 from app.utils.event_bus import create_event_bus
+from app.utils.ring_buffer import create_ring_buffer
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
@@ -17,6 +19,7 @@ def create_app_state() -> Dict[str, Any]:
             "started": False,
         },
         "event_bus": create_event_bus(),
+        "ring_buffer": create_ring_buffer(),
     }
 
 
@@ -56,4 +59,5 @@ async def healthz() -> JSONResponse:
 app.include_router(dns_router)
 app.include_router(ping_router)
 app.include_router(stream_router)
+app.include_router(metrics_router)
 
