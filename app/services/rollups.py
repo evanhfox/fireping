@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import anyio
 from sqlalchemy import select, insert
@@ -14,11 +14,11 @@ def _bucketize(ts: datetime, step: int) -> datetime:
     return datetime.fromtimestamp(bucket, tz=timezone.utc)
 
 
-def _quantiles(values: List[float], qs: List[float]) -> List[float | None]:
+def _quantiles(values: List[float], qs: List[float]) -> List[Optional[float]]:
     if not values:
         return [None for _ in qs]
     data = sorted(values)
-    out: List[float | None] = []
+    out: List[Optional[float]] = []
     for q in qs:
         idx = max(0, min(len(data) - 1, int(round(q * (len(data) - 1)))))
         out.append(data[idx])

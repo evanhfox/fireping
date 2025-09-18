@@ -28,7 +28,8 @@ class HttpProbeResponse(BaseModel):
 async def probe_http(url: str, method: str, timeout_sec: float) -> HttpProbeResponse:
     start = time.perf_counter()
     try:
-        async with httpx.AsyncClient(http2=True, timeout=timeout_sec) as client:
+        # Avoid requiring the optional 'h2' package; HTTP/1.1 is fine for latency probes
+        async with httpx.AsyncClient(timeout=timeout_sec) as client:
             resp = await client.request(method, url)
         latency_ms = (time.perf_counter() - start) * 1000.0
         ok = 200 <= resp.status_code < 400

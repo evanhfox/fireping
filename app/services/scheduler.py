@@ -1,6 +1,6 @@
 import random
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
 
 import anyio
@@ -131,7 +131,7 @@ async def _run_http_loop(app, url: str, method: str, interval_sec: float) -> Non
 
 async def start_scheduler(app, task_group: anyio.abc.TaskGroup) -> None:
     # Watch in-memory config version and restart workers on change
-    last_version: int | None = None
+    last_version: Optional[int] = None
     while True:
         cfg = app.state.runtime.setdefault("config", {
             "version": 1,
@@ -170,4 +170,15 @@ async def start_scheduler(app, task_group: anyio.abc.TaskGroup) -> None:
                         child.cancel_scope.cancel()
                         break
 
+
+
+async def run_scheduler(app) -> None:
+    """Compatibility wrapper used by app.main to start the scheduler.
+
+    The scheduler manages its own child task group lifecycle, so we just
+    delegate to start_scheduler and let it run indefinitely.
+    """
+    # The second parameter is not used internally; pass a dummy TaskGroup context
+    async with anyio.create_task_group() as tg:  # pragma: no cover
+        await start_scheduler(app, tg)
 

@@ -30,7 +30,7 @@ class ConfigState(BaseModel):
 
 
 def _get_config(app) -> Dict[str, Any]:
-    return app.state.runtime.setdefault("config", {
+    cfg = app.state.runtime.setdefault("config", {
         "version": 1,
         "tcp": [
             {"id": "cf-1.1.1.1", "host": "1.1.1.1", "port": 443, "interval_sec": 5.0},
@@ -43,12 +43,37 @@ def _get_config(app) -> Dict[str, Any]:
             {"id": "http-google", "url": "https://www.google.com", "method": "GET", "interval_sec": 10.0},
         ],
     })
+    # Normalize: assign IDs if missing (scheduler defaults may omit them)
+    tcp = []
+    for i, t in enumerate(cfg.get("tcp", [])):
+        if "id" not in t or not t["id"]:
+            t = dict(t)
+            t["id"] = f"tcp-{t.get('host','host')}-{t.get('port','0')}-{i}"
+        tcp.append(t)
+    dns = []
+    for i, d in enumerate(cfg.get("dns", [])):
+        if "id" not in d or not d["id"]:
+            d = dict(d)
+            d["id"] = f"dns-{d.get('fqdn','name')}-{i}"
+        dns.append(d)
+    http = []
+    for i, h in enumerate(cfg.get("http", [])):
+        if "id" not in h or not h["id"]:
+            h = dict(h)
+            h["id"] = f"http-{h.get('method','GET')}-{i}"
+        http.append(h)
+    cfg["tcp"], cfg["dns"], cfg["http"] = tcp, dns, http
+    return cfg
 
 
 @router.get("/state", response_model=ConfigState)
 async def get_state(request: Request) -> ConfigState:
     cfg = _get_config(request.app)
-    return ConfigState(version=cfg["version"], tcp=cfg["tcp"], dns=cfg["dns"], http=cfg.get("http", []))
+    # Validate/normalize to model instances to guarantee IDs exist
+    tcp = [TcpTarget(**t) for t in cfg.get("tcp", [])]
+    dns = [DnsJob(**d) for d in cfg.get("dns", [])]
+    http = cfg.get("http", [])
+    return ConfigState(version=cfg["version"], tcp=tcp, dns=dns, http=http)
 
 
 @router.post("/tcp", response_model=ConfigState)

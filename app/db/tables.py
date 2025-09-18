@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    MetaData, Table, Column, Integer, String, Float, Boolean, DateTime, Text, JSON, BigInteger, Index
+    MetaData, Table, Column, Integer, String, Float, Boolean, DateTime, Text, JSON, Index
 )
 
 
@@ -40,7 +40,7 @@ jobs_http = Table(
 samples_tcp = Table(
     "samples_tcp",
     metadata,
-    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("id", Integer, primary_key=True, autoincrement=True),
     Column("ts", DateTime, nullable=False),
     Column("target_id", String, nullable=True),
     Column("host", String, nullable=False),
@@ -54,7 +54,7 @@ samples_tcp = Table(
 samples_dns = Table(
     "samples_dns",
     metadata,
-    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("id", Integer, primary_key=True, autoincrement=True),
     Column("ts", DateTime, nullable=False),
     Column("job_id", String, nullable=True),
     Column("fqdn", String, nullable=False),
@@ -70,7 +70,7 @@ samples_dns = Table(
 samples_http = Table(
     "samples_http",
     metadata,
-    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("id", Integer, primary_key=True, autoincrement=True),
     Column("ts", DateTime, nullable=False),
     Column("job_id", String, nullable=True),
     Column("url", String, nullable=False),

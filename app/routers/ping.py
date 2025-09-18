@@ -27,7 +27,9 @@ class TcpPingResponse(BaseModel):
 async def tcp_connect_latency(host: str, port: int, timeout_sec: float) -> TcpPingResponse:
     start = time.perf_counter()
     try:
-        await anyio.wait_for(_connect(host, port), timeout=timeout_sec)
+        # anyio.wait_for was removed in anyio v4; use fail_after (regular context manager)
+        with anyio.fail_after(timeout_sec):
+            await _connect(host, port)
     except Exception as exc:
         elapsed_ms = (time.perf_counter() - start) * 1000.0
         return TcpPingResponse(host=host, port=port, latency_ms=elapsed_ms, success=False, error=str(exc))

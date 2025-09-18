@@ -1,6 +1,6 @@
 import asyncio
 from collections import deque
-from typing import Any, Deque, Dict, List
+from typing import Any, Deque, Dict, List, Optional
 
 
 def create_ring_buffer(maxlen: int = 2000) -> Dict[str, Any]:
@@ -11,7 +11,7 @@ def create_ring_buffer(maxlen: int = 2000) -> Dict[str, Any]:
         async with lock:
             buffer.append(item)
 
-    async def snapshot(limit: int | None = None) -> List[Dict[str, Any]]:
+    async def snapshot(limit: Optional[int] = None) -> List[Dict[str, Any]]:
         async with lock:
             data = list(buffer)
         if limit is not None:

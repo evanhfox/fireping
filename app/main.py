@@ -17,7 +17,6 @@ from app.services.scheduler import run_scheduler
 from app.db.engine import create_engine_and_init
 from app.db.repo import init_schema
 import anyio
-from app.middleware.auth import BasicAuthMiddleware
 from app.services.rollups import run_maintenance
 
 
@@ -59,7 +58,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(BasicAuthMiddleware)
 
 
 @app.get("/healthz")

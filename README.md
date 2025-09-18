@@ -9,7 +9,6 @@ Lightweight network probing and visualization service built with FastAPI. It con
 - **Storage**: Async SQLite via SQLAlchemy with simple rollups every minute
 - **Metrics**: Recent sample feed and historical rollups (p50/p95/avg and success rate)
 - **Config API**: In-memory jobs/targets you can add/remove at runtime
-- **Auth**: Optional Basic Auth for API routes (disabled by default unless password set)
 - **UI**: Single-page dashboard (Tailwind + Chart.js) served from `app/static/`
 
 ### Repository layout
@@ -31,9 +30,6 @@ Prereqs: Python 3.11+, `pip`
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# Optional: set a Basic Auth password for API endpoints
-export ADMIN_PASSWORD=changeme
-
 # Optional: choose DB file (defaults to ./data/app.db)
 export DATABASE_FILE=data/app.db
 
@@ -51,7 +47,6 @@ Build and run:
 ```bash
 docker build -t netprobe .
 docker run --rm -p 8080:8080 \
-  -e ADMIN_PASSWORD=changeme \
   -e DATABASE_FILE=/data/app.db \
   -v $(pwd)/data:/data \
   netprobe
@@ -62,7 +57,6 @@ docker run --rm -p 8080:8080 \
 An example unit is provided at `systemd/netprobe.service`. Create `/etc/netprobe.env` with:
 
 ```ini
-ADMIN_PASSWORD=changeme
 # DATABASE_URL can override SQLite, e.g. postgres+asyncpg://user:pass@host/db
 # DATABASE_FILE=/var/lib/netprobe/app.db
 ```
@@ -90,15 +84,11 @@ Default sets include:
 
 ### Environment variables
 
-- `ADMIN_USER` (default: `admin`)
-- `ADMIN_PASSWORD` (unset = no auth; set to enable Basic Auth for `/api/*`)
 - `DATABASE_URL` (optional; overrides SQLite if provided)
 - `DATABASE_FILE` (SQLite file path, default `./data/app.db`)
 - `HOST`, `PORT` (used in Dockerfile `CMD` but you can override with uvicorn args)
 
 ### API overview
-
-Auth: If `ADMIN_PASSWORD` is set, include HTTP Basic credentials. The UI will prompt and send `Authorization` headers automatically.
 
 - `GET /healthz` → `{ ok, version, started }`
 

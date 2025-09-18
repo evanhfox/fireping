@@ -3,42 +3,46 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NetProbe</title>
+    <title>FirePing</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
-  <body class="bg-neutral-950 text-neutral-100">
+  <body class="bg-white text-neutral-900">
     <div class="max-w-6xl mx-auto p-6 space-y-6">
       <header class="flex items-center justify-between">
-        <h1 class="text-2xl font-semibold">NetProbe</h1>
-        <a href="/api/healthz" class="text-sm text-neutral-400 hover:text-neutral-200">health</a>
+        <h1 class="text-3xl font-semibold tracking-tight"><span class="text-rose-600">Fire</span>Ping</h1>
+        <div class="flex items-center gap-3">
+          <button id="open-manage" class="bg-rose-600 hover:bg-rose-500 text-white rounded px-3 py-1 text-sm shadow">Manage Probes</button>
+          <a href="/healthz" class="bg-rose-50 hover:bg-rose-100 text-rose-700 rounded px-3 py-1 text-sm shadow border border-rose-200">health</a>
+        </div>
       </header>
 
       <section class="grid grid-cols-1 md:grid-cols-3 gap-4" id="summary">
-        <div class="bg-neutral-900 rounded-lg p-4"><div class="text-sm text-neutral-400">TCP samples (10m)</div><div class="text-2xl font-semibold" id="sum-tcp">—</div></div>
-        <div class="bg-neutral-900 rounded-lg p-4"><div class="text-sm text-neutral-400">DNS samples (10m)</div><div class="text-2xl font-semibold" id="sum-dns">—</div></div>
-        <div class="bg-neutral-900 rounded-lg p-4"><div class="text-sm text-neutral-400">HTTP samples (10m)</div><div class="text-2xl font-semibold" id="sum-http">—</div></div>
+        <div class="bg-white rounded-xl p-4 border border-neutral-200 shadow-sm"><div class="text-xs uppercase tracking-wide text-neutral-500">TCP samples (10m)</div><div class="text-3xl font-semibold" id="sum-tcp">—</div></div>
+        <div class="bg-white rounded-xl p-4 border border-neutral-200 shadow-sm"><div class="text-xs uppercase tracking-wide text-neutral-500">DNS samples (10m)</div><div class="text-3xl font-semibold" id="sum-dns">—</div></div>
+        <div class="bg-white rounded-xl p-4 border border-neutral-200 shadow-sm"><div class="text-xs uppercase tracking-wide text-neutral-500">HTTP samples (10m)</div><div class="text-3xl font-semibold" id="sum-http">—</div></div>
       </section>
 
       <section class="grid grid-cols-1 md:grid-cols-2 gap-4" id="cards"></section>
 
-      <section class="bg-neutral-900 rounded-lg p-4">
+      <section class="bg-white rounded-xl p-4 border border-neutral-200 shadow-sm">
         <h2 class="text-lg font-medium mb-2">Live Latency</h2>
         <canvas id="latencyChart" height="120"></canvas>
       </section>
 
-      <section class="bg-neutral-900 rounded-lg p-4 space-y-3">
+      <section class="bg-white rounded-xl p-4 border border-neutral-200 shadow-sm space-y-3">
         <div class="flex flex-wrap items-end gap-3">
           <div>
-            <label class="text-xs text-neutral-400">Kind</label>
-            <select id="hist-kind" class="bg-neutral-800 rounded px-2 py-1">
+            <label class="text-xs text-neutral-500">Kind</label>
+            <select id="hist-kind" class="bg-neutral-100 rounded px-2 py-1 border border-neutral-300">
               <option value="tcp">TCP</option>
               <option value="dns">DNS</option>
             </select>
           </div>
           <div>
-            <label class="text-xs text-neutral-400">Minutes</label>
-            <select id="hist-min" class="bg-neutral-800 rounded px-2 py-1">
+            <label class="text-xs text-neutral-500">Minutes</label>
+            <select id="hist-min" class="bg-neutral-100 rounded px-2 py-1 border border-neutral-300">
               <option>30</option>
               <option selected>60</option>
               <option>180</option>
@@ -46,69 +50,73 @@
             </select>
           </div>
           <div>
-            <label class="text-xs text-neutral-400">Step (sec)</label>
-            <select id="hist-step" class="bg-neutral-800 rounded px-2 py-1">
+            <label class="text-xs text-neutral-500">Step (sec)</label>
+            <select id="hist-step" class="bg-neutral-100 rounded px-2 py-1 border border-neutral-300">
               <option>30</option>
               <option selected>60</option>
               <option>300</option>
             </select>
           </div>
           <div id="hist-filter-host" class="hidden">
-            <label class="text-xs text-neutral-400">Host</label>
-            <input id="hist-host" class="bg-neutral-800 rounded px-2 py-1" placeholder="1.1.1.1" />
+            <label class="text-xs text-neutral-500">Host</label>
+            <input id="hist-host" class="bg-neutral-100 rounded px-2 py-1 border border-neutral-300" placeholder="1.1.1.1" />
           </div>
           <div id="hist-filter-fqdn" class="hidden">
-            <label class="text-xs text-neutral-400">FQDN</label>
-            <input id="hist-fqdn" class="bg-neutral-800 rounded px-2 py-1" placeholder="example.com" />
+            <label class="text-xs text-neutral-500">FQDN</label>
+            <input id="hist-fqdn" class="bg-neutral-100 rounded px-2 py-1 border border-neutral-300" placeholder="example.com" />
           </div>
-          <button id="hist-run" class="ml-auto bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1">Run</button>
+          <button id="hist-run" class="ml-auto bg-rose-600 hover:bg-rose-500 text-white rounded px-3 py-1 shadow">Run</button>
         </div>
         <div>
           <canvas id="historyChart" height="140"></canvas>
         </div>
       </section>
 
-      <section class="bg-neutral-900 rounded-lg p-4 space-y-3">
-        <h2 class="text-lg font-medium">Settings</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <h3 class="font-medium mb-2">TCP Targets</h3>
-            <div id="tcp-list" class="space-y-1 text-sm"></div>
-            <div class="flex gap-2 mt-2">
-              <input id="tcp-host" placeholder="host" class="bg-neutral-800 rounded px-2 py-1 w-full" />
-              <input id="tcp-port" type="number" placeholder="port" class="bg-neutral-800 rounded px-2 py-1 w-24" />
-            </div>
-            <div class="flex gap-2 mt-2">
-              <input id="tcp-interval" type="number" step="0.5" placeholder="interval" class="bg-neutral-800 rounded px-2 py-1 w-32" />
-              <button id="tcp-add" class="bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1">Add</button>
-            </div>
+      <!-- Manage Probes Modal (light theme) -->
+      <div id="manage-modal" class="hidden fixed inset-0 z-50">
+        <div class="absolute inset-0 bg-black/30"></div>
+        <div class="relative mx-auto mt-12 w-[min(100%,900px)] bg-white rounded-xl shadow-xl border border-neutral-200">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-neutral-200">
+            <h3 class="text-lg font-medium">Manage Probes</h3>
+            <button id="close-manage" class="text-neutral-500 hover:text-neutral-700">✕</button>
           </div>
-          <div>
-            <h3 class="font-medium mb-2">DNS Jobs</h3>
-            <div id="dns-list" class="space-y-1 text-sm"></div>
-            <div class="flex gap-2 mt-2">
-              <input id="dns-fqdn" placeholder="fqdn" class="bg-neutral-800 rounded px-2 py-1 w-full" />
-              <input id="dns-resolvers" placeholder="resolvers (comma)" class="bg-neutral-800 rounded px-2 py-1 w-full" />
+          <div class="px-4 pt-3">
+            <div class="flex gap-2 mb-3">
+              <button data-tab="tcp" class="tab active bg-rose-600 hover:bg-rose-500 text-white rounded px-3 py-1">TCP</button>
+              <button data-tab="dns" class="tab bg-neutral-100 hover:bg-neutral-200 rounded px-3 py-1 border border-neutral-300">DNS</button>
+              <button data-tab="http" class="tab bg-neutral-100 hover:bg-neutral-200 rounded px-3 py-1 border border-neutral-300">HTTP</button>
             </div>
-            <div class="flex gap-2 mt-2">
-              <input id="dns-interval" type="number" step="0.5" placeholder="interval" class="bg-neutral-800 rounded px-2 py-1 w-32" />
-              <button id="dns-add" class="bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1">Add</button>
+            <div id="tab-tcp" class="tab-pane space-y-3">
+              <div class="flex gap-2">
+                <input id="m-tcp-host" placeholder="host" class="bg-neutral-100 rounded px-2 py-1 w-full border border-neutral-300" />
+                <input id="m-tcp-port" type="number" placeholder="port" class="bg-neutral-100 rounded px-2 py-1 w-24 border border-neutral-300" />
+                <input id="m-tcp-interval" type="number" step="0.5" placeholder="interval (s)" class="bg-neutral-100 rounded px-2 py-1 w-32 border border-neutral-300" />
+                <button id="m-tcp-add" class="bg-rose-600 hover:bg-rose-500 text-white rounded px-3 py-1">Add</button>
+              </div>
+              <div id="m-tcp-list" class="divide-y divide-neutral-200"></div>
             </div>
-          </div>
-          <div>
-            <h3 class="font-medium mb-2">HTTP Jobs</h3>
-            <div id="http-list" class="space-y-1 text-sm"></div>
-            <div class="flex gap-2 mt-2">
-              <input id="http-url" placeholder="https://..." class="bg-neutral-800 rounded px-2 py-1 w-full" />
-              <select id="http-method" class="bg-neutral-800 rounded px-2 py-1 w-28"><option>GET</option><option>HEAD</option></select>
+            <div id="tab-dns" class="tab-pane hidden space-y-3">
+              <div class="flex gap-2">
+                <input id="m-dns-fqdn" placeholder="fqdn" class="bg-neutral-100 rounded px-2 py-1 w-full border border-neutral-300" />
+                <input id="m-dns-resolvers" placeholder="resolvers (comma)" class="bg-neutral-100 rounded px-2 py-1 w-full border border-neutral-300" />
+                <input id="m-dns-interval" type="number" step="0.5" placeholder="interval (s)" class="bg-neutral-100 rounded px-2 py-1 w-32 border border-neutral-300" />
+                <button id="m-dns-add" class="bg-rose-600 hover:bg-rose-500 text-white rounded px-3 py-1">Add</button>
+              </div>
+              <div id="m-dns-list" class="divide-y divide-neutral-200"></div>
             </div>
-            <div class="flex gap-2 mt-2">
-              <input id="http-interval" type="number" step="0.5" placeholder="interval" class="bg-neutral-800 rounded px-2 py-1 w-32" />
-              <button id="http-add" class="bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1">Add</button>
+            <div id="tab-http" class="tab-pane hidden space-y-3">
+              <div class="flex gap-2">
+                <input id="m-http-url" placeholder="https://..." class="bg-neutral-100 rounded px-2 py-1 w-full border border-neutral-300" />
+                <select id="m-http-method" class="bg-neutral-100 rounded px-2 py-1 w-28 border border-neutral-300"><option>GET</option><option>HEAD</option></select>
+                <input id="m-http-interval" type="number" step="0.5" placeholder="interval (s)" class="bg-neutral-100 rounded px-2 py-1 w-32 border border-neutral-300" />
+                <button id="m-http-add" class="bg-rose-600 hover:bg-rose-500 text-white rounded px-3 py-1">Add</button>
+              </div>
+              <div id="m-http-list" class="divide-y divide-neutral-200"></div>
             </div>
+            <div class="h-4"></div>
           </div>
         </div>
-      </section>
+      </div>
     </div>
 
     <script type="module" src="/app.js"></script>
