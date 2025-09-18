@@ -11,6 +11,7 @@ from app.utils.ring_buffer import create_ring_buffer
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
+from app.services.scheduler import run_scheduler
 
 
 def create_app_state() -> Dict[str, Any]:
@@ -28,8 +29,14 @@ def create_app_state() -> Dict[str, Any]:
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.runtime = create_app_state()
     app.state.runtime["in_memory_store"]["started"] = True
-    try:
-        yield
+    async with anyio.create_task_group() as tg:  # type: ignore[name-defined]
+        import anyio  # local import to avoid unused when not used
+
+        tg.start_soon(run_scheduler, app)
+        try:
+            yield
+        finally:
+            tg.cancel_scope.cancel()
     finally:
         app.state.runtime["in_memory_store"]["started"] = False
 
