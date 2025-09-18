@@ -82,3 +82,52 @@ samples_http = Table(
     Index("idx_http_ts", "ts"),
 )
 
+
+# Aggregate tables (1-minute buckets)
+aggregates_tcp_1m = Table(
+    "aggregates_tcp_1m",
+    metadata,
+    Column("bucket", DateTime, primary_key=True),
+    Column("host", String, primary_key=True),
+    Column("port", Integer, primary_key=True),
+    Column("count", Integer, nullable=False),
+    Column("success_count", Integer, nullable=False),
+    Column("p50", Float, nullable=True),
+    Column("p95", Float, nullable=True),
+    Column("avg", Float, nullable=True),
+    Column("min", Float, nullable=True),
+    Column("max", Float, nullable=True),
+)
+
+
+aggregates_dns_1m = Table(
+    "aggregates_dns_1m",
+    metadata,
+    Column("bucket", DateTime, primary_key=True),
+    Column("fqdn", String, primary_key=True),
+    Column("resolver", String, primary_key=True),
+    Column("count", Integer, nullable=False),
+    Column("success_count", Integer, nullable=False),
+    Column("p50", Float, nullable=True),
+    Column("p95", Float, nullable=True),
+    Column("avg", Float, nullable=True),
+    Column("min", Float, nullable=True),
+    Column("max", Float, nullable=True),
+)
+
+
+aggregates_http_1m = Table(
+    "aggregates_http_1m",
+    metadata,
+    Column("bucket", DateTime, primary_key=True),
+    Column("url", String, primary_key=True),
+    Column("method", String, primary_key=True),
+    Column("count", Integer, nullable=False),
+    Column("success_count", Integer, nullable=False),
+    Column("p50", Float, nullable=True),
+    Column("p95", Float, nullable=True),
+    Column("avg", Float, nullable=True),
+    Column("min", Float, nullable=True),
+    Column("max", Float, nullable=True),
+)
+

@@ -4,6 +4,9 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field
 from app.db.repo import fetch_tcp_samples_between, fetch_dns_samples_between
+from sqlalchemy import select
+from app.db.tables import aggregates_tcp_1m, aggregates_dns_1m, aggregates_http_1m
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 
 router = APIRouter(prefix="/api/metrics", tags=["metrics"])
@@ -84,6 +87,21 @@ async def tcp_rollup(
         sr = e["ok"] / e["count"] if e["count"] else 0.0
         points.append(RollupPoint(bucket=b, count=e["count"], success_rate=sr, p50=p50, p95=p95, avg=avg))
     return RollupResponse(points=points)
+
+
+@router.get("/summary")
+async def summary(request: Request) -> Dict[str, Any]:
+    engine: AsyncEngine = request.app.state.runtime.get("db_engine")
+    end = datetime.now(timezone.utc)
+    start = end - timedelta(minutes=10)
+    async def _count(table):
+        async with engine.begin() as conn:
+            rows = (await conn.execute(select(table.c.count).where(table.c.bucket >= start))).all()
+        return sum(r[0] for r in rows)
+    tcp = await _count(aggregates_tcp_1m)
+    dns = await _count(aggregates_dns_1m)
+    http = await _count(aggregates_http_1m)
+    return {"last_10m_samples": {"tcp": tcp, "dns": dns, "http": http}}
 
 
 @router.get("/dns_rollup", response_model=RollupResponse)

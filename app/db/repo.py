@@ -1,10 +1,15 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, delete
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from app.db.tables import metadata, samples_tcp, samples_dns, samples_http, targets_tcp, jobs_dns, jobs_http
+from app.db.tables import (
+    metadata,
+    samples_tcp, samples_dns, samples_http,
+    targets_tcp, jobs_dns, jobs_http,
+    aggregates_tcp_1m, aggregates_dns_1m, aggregates_http_1m,
+)
 
 
 def utc_now() -> datetime:
@@ -46,6 +51,13 @@ async def fetch_tcp_samples_between(
     async with engine.begin() as conn:
         rows = (await conn.execute(stmt)).mappings().all()
     return [dict(r) for r in rows]
+
+
+async def prune_retention(engine: AsyncEngine, older_than: datetime) -> None:
+    async with engine.begin() as conn:
+        await conn.execute(delete(samples_tcp).where(samples_tcp.c.ts < older_than))
+        await conn.execute(delete(samples_dns).where(samples_dns.c.ts < older_than))
+        await conn.execute(delete(samples_http).where(samples_http.c.ts < older_than))
 
 
 async def fetch_dns_samples_between(

@@ -18,6 +18,7 @@ from app.db.engine import create_engine_and_init
 from app.db.repo import init_schema
 import anyio
 from app.middleware.auth import BasicAuthMiddleware
+from app.services.rollups import run_maintenance
 
 
 def create_app_state() -> Dict[str, Any]:
@@ -40,6 +41,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.runtime["db_engine"] = engine
     async with anyio.create_task_group() as tg:
         tg.start_soon(run_scheduler, app)
+        tg.start_soon(run_maintenance, app)
         try:
             yield
         finally:
