@@ -69,7 +69,15 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL'
-          exit-code: '1'
+          exit-code: '0'
+
+      - name: Fail if CRITICAL findings in SARIF
+        run: |
+          count=$(jq '[.runs[].results[]?] | length' trivy-results.sarif)
+          echo "CRITICAL findings: $count"
+          if [ "$count" -gt 0 ]; then
+            exit 1
+          fi
 
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
