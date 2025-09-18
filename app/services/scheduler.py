@@ -3,6 +3,90 @@ import time
 from typing import Any, Dict, List
 
 import anyio
+from fastapi import HTTPException
+
+from app.routers.ping import tcp_connect_latency, TcpPingResponse
+from app.routers.dns import resolve_dns, DnsQueryRequest, DnsQueryResponse
+
+
+def _jitter_seconds(base: float, pct: float = 0.15) -> float:
+    delta = base * pct
+    return base + random.uniform(-delta, +delta)
+
+
+def default_ping_targets() -> List[Dict[str, Any]]:
+    return [
+        {"host": "1.1.1.1", "port": 443, "interval_sec": 5.0},
+        {"host": "8.8.8.8", "port": 443, "interval_sec": 5.0},
+        {"host": "google.com", "port": 443, "interval_sec": 5.0},
+    ]
+
+
+def default_dns_jobs() -> List[Dict[str, Any]]:
+    return [
+        {"fqdn": "google.com", "record_type": "A", "resolvers": ["1.1.1.1", "8.8.8.8"], "interval_sec": 5.0},
+        {"fqdn": "cloudflare.com", "record_type": "A", "resolvers": ["1.1.1.1", "8.8.8.8"], "interval_sec": 5.0},
+    ]
+
+
+async def _publish_and_buffer(app, event_type: str, data: Dict[str, Any]) -> None:
+    bus = app.state.runtime.get("event_bus")
+    ring = app.state.runtime.get("ring_buffer")
+    await bus["publish"]({"type": event_type, "data": data})
+    await ring["append"]({"type": event_type, "data": data})
+
+
+async def _run_ping_loop(app, host: str, port: int, interval_sec: float) -> None:
+    while True:
+        started = time.perf_counter()
+        result: TcpPingResponse = await tcp_connect_latency(host, port, timeout_sec=min(2.0, interval_sec))
+        await _publish_and_buffer(app, "tcp_sample", result.model_dump())
+        elapsed = time.perf_counter() - started
+        sleep_s = max(0.05, _jitter_seconds(interval_sec) - elapsed)
+        await anyio.sleep(sleep_s)
+
+
+async def _run_dns_loop(app, fqdn: str, record_type: str, resolvers: List[str], interval_sec: float) -> None:
+    while True:
+        started = time.perf_counter()
+        try:
+            req = DnsQueryRequest(fqdn=fqdn, record_type=record_type, resolvers=resolvers)
+            result: DnsQueryResponse = await resolve_dns(req)
+        except HTTPException as exc:
+            # Map to a standard error response
+            result = DnsQueryResponse(
+                fqdn=fqdn,
+                record_type=record_type,
+                resolver=resolvers[0] if resolvers else None,
+                latency_ms=0.0,
+                rcode="ERROR",
+                success=False,
+                answers=[],
+            )
+        await _publish_and_buffer(app, "dns_sample", result.model_dump())
+        elapsed = time.perf_counter() - started
+        sleep_s = max(0.05, _jitter_seconds(interval_sec) - elapsed)
+        await anyio.sleep(sleep_s)
+
+
+async def start_scheduler(app, task_group: anyio.abc.TaskGroup) -> None:
+    for target in default_ping_targets():
+        task_group.start_soon(_run_ping_loop, app, target["host"], target["port"], float(target["interval_sec"]))
+    for job in default_dns_jobs():
+        task_group.start_soon(
+            _run_dns_loop,
+            app,
+            job["fqdn"],
+            job.get("record_type", "A"),
+            list(job.get("resolvers", [])),
+            float(job["interval_sec"]),
+        )
+
+import random
+import time
+from typing import Any, Dict, List
+
+import anyio
 from fastapi import FastAPI
 
 from app.routers.ping import tcp_connect_latency
