@@ -10,8 +10,9 @@ const chart = new Chart(ctx, {
   data: {
     labels: state.labels,
     datasets: [
-      { label: 'TCP (ms)', data: [], borderColor: '#60a5fa', tension: 0.2 },
-      { label: 'DNS (ms)', data: [], borderColor: '#f472b6', tension: 0.2 },
+      { label: 'TCP (ms)', data: [], borderColor: '#60a5fa', tension: 0.2, pointRadius: 0, segment: { borderColor: ctx => (ctx.p1.parsed.y === 0 ? 'rgba(239,68,68,0.8)' : '#60a5fa') } },
+      { label: 'DNS (ms)', data: [], borderColor: '#f472b6', tension: 0.2, pointRadius: 0 },
+      { label: 'HTTP (ms)', data: [], borderColor: '#22c55e', tension: 0.2, pointRadius: 0 },
     ],
   },
   options: {
@@ -89,6 +90,9 @@ function handleEvent(evt) {
   } else if (type === 'dns_sample') {
     upsertCard(`dns-${data.fqdn}`, data);
     pushPoint(1, label, data.latency_ms);
+  } else if (type === 'http_sample') {
+    upsertCard(`http-${data.method} ${data.url}`, data);
+    pushPoint(2, label, data.latency_ms);
   }
 }
 
@@ -109,6 +113,18 @@ async function bootstrap() {
   es.onerror = () => {
     // Auto-reconnect handled by EventSource; we can log if needed
   };
+
+  // Summary every 30s
+  setInterval(async () => {
+    try {
+      const r = await fetch('/api/metrics/summary');
+      if (!r.ok) return;
+      const s = await r.json();
+      document.getElementById('sum-tcp').textContent = s.last_10m_samples.tcp;
+      document.getElementById('sum-dns').textContent = s.last_10m_samples.dns;
+      document.getElementById('sum-http').textContent = s.last_10m_samples.http;
+    } catch {}
+  }, 30000);
 }
 
 bootstrap();
