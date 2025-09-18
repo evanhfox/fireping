@@ -3,6 +3,9 @@ from typing import AsyncIterator, Dict, Any
 
 from fastapi import FastAPI
 from app.routers.dns import router as dns_router
+from app.routers.ping import router as ping_router
+from app.routers.stream import router as stream_router
+from app.utils.event_bus import create_event_bus
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
@@ -13,6 +16,7 @@ def create_app_state() -> Dict[str, Any]:
         "in_memory_store": {
             "started": False,
         },
+        "event_bus": create_event_bus(),
     }
 
 
@@ -50,4 +54,6 @@ async def healthz() -> JSONResponse:
 
 
 app.include_router(dns_router)
+app.include_router(ping_router)
+app.include_router(stream_router)
 

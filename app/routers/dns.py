@@ -1,7 +1,7 @@
 from typing import List, Optional
 import time
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 try:
@@ -99,6 +99,13 @@ async def _resolve_async(resolver: "dns.resolver.Resolver", fqdn: str, record_ty
 
 
 @router.post("/query", response_model=DnsQueryResponse)
-async def dns_query(payload: DnsQueryRequest) -> DnsQueryResponse:
-    return await resolve_dns(payload)
+async def dns_query(payload: DnsQueryRequest, request: Request) -> DnsQueryResponse:
+    result = await resolve_dns(payload)
+    bus = request.app.state.runtime.get("event_bus")
+    publish = bus["publish"]
+    await publish({
+        "type": "dns_sample",
+        "data": result.model_dump(),
+    })
+    return result
 
