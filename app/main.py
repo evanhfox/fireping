@@ -13,6 +13,8 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 from app.services.scheduler import run_scheduler
+from app.db.engine import create_engine_and_init
+from app.db.repo import init_schema
 import anyio
 
 
@@ -31,6 +33,9 @@ def create_app_state() -> Dict[str, Any]:
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.runtime = create_app_state()
     app.state.runtime["in_memory_store"]["started"] = True
+    engine = await create_engine_and_init()
+    await init_schema(engine)
+    app.state.runtime["db_engine"] = engine
     async with anyio.create_task_group() as tg:
         tg.start_soon(run_scheduler, app)
         try:
