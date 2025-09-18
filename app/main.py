@@ -45,6 +45,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             yield
         finally:
             tg.cancel_scope.cancel()
+            # Dispose DB engine to shutdown aiosqlite worker thread cleanly
+            engine = app.state.runtime.get("db_engine")
+            if engine is not None:
+                try:
+                    await engine.dispose()
+                except Exception:
+                    pass
     app.state.runtime["in_memory_store"]["started"] = False
 
 
