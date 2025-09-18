@@ -10,6 +10,7 @@ from app.utils.event_bus import create_event_bus
 from app.utils.ring_buffer import create_ring_buffer
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
+from starlette.staticfiles import StaticFiles
 
 
 def create_app_state() -> Dict[str, Any]:
@@ -60,4 +61,7 @@ app.include_router(dns_router)
 app.include_router(ping_router)
 app.include_router(stream_router)
 app.include_router(metrics_router)
+
+# Serve static frontend (fallback index.html)
+app.mount("/", StaticFiles(directory="app/static", html=True), name="static")
 
