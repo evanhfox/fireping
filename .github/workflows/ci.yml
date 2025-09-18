@@ -48,7 +48,7 @@ jobs:
           docker build -t fireping:ci .
 
       - name: Trivy (human-readable table)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: 'image'
           image-ref: 'fireping:ci'
@@ -58,7 +58,7 @@ jobs:
           severity: 'CRITICAL'
 
       - name: Run Trivy container scan (SARIF, non-blocking)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: 'image'
           image-ref: 'fireping:ci'
