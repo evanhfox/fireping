@@ -1,7 +1,7 @@
 fastapi==0.116.2
 uvicorn==0.35.0
 anyio==4.10.0
-dnspython==2.6.1
+dnspython==2.8.0
 pydantic==2.11.9
 SQLAlchemy==2.0.43
 aiosqlite==0.21.0
